@@ -17,6 +17,10 @@ def process_audio():
     user_name = request.form['user_name']
     native_language = request.form['native_language']
     target_language = request.form['target_language']
+
+    # Guarda el audio blob como .wav
+    wav_filename = f"./audios/audio_file.wav"
+    audio_file.save(wav_filename)
     
     # Utiliza Whisper para convertir el audio a texto
     text = transcribe_audio(audio_file)
@@ -44,18 +48,21 @@ def process_audio():
     }
     return jsonify(response)
 
-def transcribe_audio(audio_file):
+def transcribe_audio(wav_filename):
     # Aquí iría el código para enviar una solicitud a la API de Whisper
     # y convertir el archivo de audio en texto
     # Por ejemplo:
+    openai.api_key = whisper_api_key
+    audio_file = open(wav_filename, "rb")
+    transcript = openai.Audio.transcribe("whisper-1", audio_file)
     response = requests.post(
-        "<URL DE LA API DE WHISPER>",
+        #"<URL DE LA API DE WHISPER>",
         headers={
             "Content-Type": "application/json",
            # "<OTROS ENCABEZADOS NECESARIOS>"
         },
         data={
-            "<DATOS NECESARIOS PARA ENVIAR EL ARCHIVO DE AUDIO A LA API DE WHISPER>"
+            #"<DATOS NECESARIOS PARA ENVIAR EL ARCHIVO DE AUDIO A LA API DE WHISPER>"
         }
     )
     data = response.json()
@@ -93,13 +100,13 @@ def text_to_speech(text, language):
     # y convertir el texto en voz en el idioma especificado
     # Por ejemplo:
     response = requests.post(
-        "<URL DE LA API DE ELEVENLABS>",
+        #"<URL DE LA API DE ELEVENLABS>",
         headers={
             "Content-Type": "application/json",
           #  "<OTROS ENCABEZADOS NECESARIOS>"
         },
         data={
-            "<DATOS NECESARIOS PARA CONVERTIR EL TEXTO EN VOZ>"
+           # "<DATOS NECESARIOS PARA CONVERTIR EL TEXTO EN VOZ>"
         }
     )
     
