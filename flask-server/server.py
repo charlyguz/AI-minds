@@ -8,9 +8,9 @@ from elevenlabs import set_api_key, generate, save
 from io import BytesIO
 import base64
 
-whisper_api_key = os.environ['WHISPER_API_KEY']
-gpt_api_key = os.environ['GPT_API_KEY']
-elevenlabs_api_key = os.environ['ELEVENLABS_API_KEY']
+whisper_api_key = "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"
+gpt_api_key = "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"
+elevenlabs_api_key = "b31598d8fbe16306fa3939bb4176b419"
 set_api_key(elevenlabs_api_key) 
 openai.api_key = gpt_api_key
 app = Flask(__name__)
@@ -73,14 +73,15 @@ def get_response(text, native_language, target_language):
     # y generar una respuesta en el idioma nativo y en el idioma objetivo
     # Por ejemplo:
     if text == "":
-        prompt = f"Apartir de ahora seras una maestra de idiomas llamada Laura que me ayudara a aprender {target_language} apartir de mi idioma natal que es {native_language}. Quiero que inicies la conversacion diciendome tu nombre y que seras mi maestra y podemos hablar de cualquier tema que deses todas las resuestas que me devuelvas quiero que primero me las des en mi idioma natal y despues en el idioma que quiero aprender para asi saber como deberia continuar una conversacion en el idioma que quiero aprender. La respuesta que recibiras siempre sera en el idioma que deseo aprender y tu debes continuar la conversacion. Todo lo que me digas tiene que estar en 2 versiones 1 es en mi idioma natal y la segunda es el idioma que quiero aprender. Las respuestas que me des deben ser cortas para que no me pierda entre tanto texto."
+        prompt = f"Tu eres Laura. Laura como profesora de lenguas, le enseña a su alumno a hablar {target_language} y le repetite todo en {native_language} para que aprenda como se escucha la misma frase en los 2 idiomas. Laura es muy abierta y siempre le pregunta a su alumno de que tema quiere hablar hoy."
     else:
         prompt = text 
     
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=prompt,
-        max_tokens=150
+        max_tokens=60,
+        temperature=0.5
     )
 
     

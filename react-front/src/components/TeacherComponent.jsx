@@ -14,6 +14,10 @@ export default function TeacherComponent({ userData }) {
     setAudioSourceURL(url);
     sendAudioToServer(blob);
   };
+  useEffect(() => {
+    setTranscriptionText('');
+  }, [audioSourceURL]);
+
   const sendAudioToServer = async (blob) => {
     const audioFile = new File([blob], "audio_file",{type: "audio/wav"});
     const formData = new FormData();
@@ -21,7 +25,7 @@ export default function TeacherComponent({ userData }) {
     formData.append('user_name', userData.name);
     formData.append('native_language', userData.nativeLanguage);
     formData.append('target_language', userData.learningLanguage);
-
+    console.log(audioFile);
     const response = await fetch('http://localhost:5000/start_conversation', {
       method: 'POST',
       body: formData,
