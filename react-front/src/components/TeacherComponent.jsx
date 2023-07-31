@@ -6,6 +6,30 @@ export default function TeacherComponent({ userData }) {
   const [recording, setRecording] = React.useState(null);
   const [isRecording, setIsRecording] = React.useState(false);
   const [responseText, setResponseText] = React.useState('');
+  
+  React.useEffect(() => {
+    const startConversation = async () => {
+      const response = await fetch('http://localhost:5000/start_conversation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          user_name: userData.name,
+          native_language: userData.nativeLanguage,
+          target_language: userData.learningLanguage
+        })
+      });
+  
+      const data = await response.json();
+      setResponseText(data.native_response);
+      const audio = new Audio(`data:audio/wav;base64,${data.native_audio_response}`);
+      audio.play();
+    };
+  
+    startConversation();
+  }, []);
+
 
   const startRecording = () => {
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -46,7 +70,7 @@ export default function TeacherComponent({ userData }) {
       method: 'POST',
       body: formData,
     });
-
+    
     const data = await response.json();
     
       // Aquí puedes acceder a los datos devueltos por el servidor Flask
