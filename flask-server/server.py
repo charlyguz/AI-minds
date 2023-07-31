@@ -8,9 +8,9 @@ from elevenlabs import set_api_key, generate, save
 from io import BytesIO
 import base64
 
-whisper_api_key = "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"
-gpt_api_key = "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"
-elevenlabs_api_key = "b31598d8fbe16306fa3939bb4176b419"
+whisper_api_key = os.environ['WHISPER_API_KEY']
+gpt_api_key = os.environ['GPT_API_KEY']
+elevenlabs_api_key = os.environ['ELEVENLABS_API_KEY']
 set_api_key(elevenlabs_api_key) 
 openai.api_key = gpt_api_key
 app = Flask(__name__)
@@ -19,7 +19,6 @@ CORS(app)
 @app.route('/start_conversation', methods=['POST'])
 def start_conversation():
     audio_file = request.files['audio']
-    user_name = request.form['user_name']
     native_language = request.form['native_language']
     target_language = request.form['target_language']
     
@@ -35,16 +34,16 @@ def start_conversation():
 
     target_audio_base64 = wav_base64.decode()
     
-    # Guarda el audio blob como .wav
-    wav_filename = f"./audio_file.wav"
+    # Guarda el audio blob como .mp3
+    wav_filename = f"./audio_file.mp3"
     audio_file.save(wav_filename)
     # Utiliza Whisper para convertir el audio a texto
     transcript = whisper(wav_filename)
     # Envía el audio como una respuesta de archivo
     response_data = {
         'text_response': response_text,
-        'audio_response': target_audio_base64,
-        'transcript': transcript
+        'audio_response': target_audio_base64
+        #'transcript': transcript
     }
     
     return jsonify(response_data)
@@ -63,8 +62,8 @@ def text_to_speech(texto):
     voice="Rachel",
     model='eleven_multilingual_v1'
         )
-    save(audio, "11L_file.wav")
-    route = "11L_file.wav"
+    save(audio, "11L_file.mp3")
+    route = "11L_file.mp3"
     
     return route
 
@@ -73,7 +72,7 @@ def get_response(text, native_language, target_language):
     # y generar una respuesta en el idioma nativo y en el idioma objetivo
     # Por ejemplo:
     if text == "":
-        prompt = f"Tu eres Laura. Laura como profesora de lenguas, le enseña a su alumno a hablar {target_language} y le repetite todo en {native_language} para que aprenda como se escucha la misma frase en los 2 idiomas. Laura es muy abierta y siempre le pregunta a su alumno de que tema quiere hablar hoy."
+        prompt = f"Tu eres Laura. Laura como profesora de lenguas, le enseña a su alumno a hablar {target_language} y le repetite todo en {native_language} para que aprenda como se escucha la misma frase en los 2 idiomas. Laura es muy abierta y siempre le pregunta a su alumno de que tema quiere hablar hoy. Tienes que simular ser Laura para dar clases de idiomas. Solo puedes dar un parrafo de texto a la vez"
     else:
         prompt = text 
     
