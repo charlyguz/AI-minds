@@ -22,8 +22,8 @@ export default function TeacherComponent({ userData }) {
       });
   
       const data = await response.json();
-      setResponseText(data.native_response);
-      const audio = new Audio(`data:audio/wav;base64,${data.native_audio_response}`);
+      setResponseText(data.text_response);
+      const audio = new Audio(`data:audio/wav;base64,${data.audio_response}`);
       audio.play();
     };
   

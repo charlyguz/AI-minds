@@ -6,12 +6,13 @@ import os
 from elevenlabs import Voice, VoiceDesign, Gender, Age, Accent,  generate
 from elevenlabs import set_api_key
 from io import BytesIO
+import base64
 
 
 whisper_api_key = os.environ['WHISPER_API_KEY']
 gpt_api_key = os.environ['GPT_API_KEY']
 elevenlabs_api_key = os.environ['ELEVENLABS_API_KEY']
-openai.api_key = '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'
+openai.api_key = ['OPENAI_API_KEY']
 app = Flask(__name__)
 CORS(app)
 """
@@ -95,8 +96,8 @@ def get_feedback(text, user_name, native_language, target_language):
 def text_to_speech(text, language):
     # Utiliza la API de ElevenLabs para convertir el texto en voz
     audio = generate(
-    text="¡Hola! Mi nombre es Arnold, encantado de conocerte!",
-    voice="Arnold",
+    text=text,
+    voice="Bella",
     model='eleven_multilingual_v1'
         )
     return audio
@@ -114,9 +115,19 @@ def start_conversation():
     
     # Utiliza ElevenLabs para convertir el texto de respuesta a voz en ambos idiomas
     target_audio_response = text_to_speech(response_text, target_language)
-    
+
+    target_audio_base64 = base64.b64encode(target_audio_response).decode()
+
     # Envía el audio como una respuesta de archivo
-    return send_file(BytesIO(target_audio_response), mimetype='audio/mpeg')
+    response_data = {
+        'text_response': response_text,
+        'audio_response': target_audio_base64
+    }
+    
+    return jsonify(response_data)
+    
+
+
 
 def get_response(text, native_language, target_language):
     # Aquí iría el código para enviar una solicitud a la API de GPT-4
@@ -129,7 +140,8 @@ def get_response(text, native_language, target_language):
     
     response = openai.Completion.create(
         model="text-davinci-003",
-        prompt=prompt
+        prompt=prompt,
+        max_tokens=150
     )
 
     
