@@ -1,58 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import teacher from '../assets/teacher.png';
 import '../index.css';
+import MicRecorder from 'mic-recorder-to-mp3';
 
 export default function TeacherComponent({ userData }) {
-  const [recording, setRecording] = React.useState(null);
-  const [isRecording, setIsRecording] = React.useState(false);
   const [responseText, setResponseText] = React.useState('');
+  const recorder = useRef(null); //Recorder
+  const audioPlayer = useRef(null); //Ref for HTML Audio tag
+  const [transcriptionText, setTranscriptionText] = useState("");
+  const [blobURL, setBlobUrl] = useState(null);
+  const [isRecording, setIsRecording] = useState(null);
+  const [play, setPlay] = useState(false);
 
+  useEffect(() => {
+    //Declares the recorder object and stores it in ref
+    recorder.current = new MicRecorder({ bitRate: 128 });
+    setTranscriptionText('');
+  }, []);
   const startRecording = () => {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.start();
+    //start() returns a promise incase if audio is not blocked by browser
+    recorder.current.start().then(() => {
       setIsRecording(true);
-
-      const audioChunks = [];
-      mediaRecorder.addEventListener('dataavailable', event => {
-        audioChunks.push(event.data);
-      });
-
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(audioChunks);
-        sendAudioToServer(audioBlob);
-        setRecording(audioBlob);
-      });
-
-      setRecording(mediaRecorder);
     });
   };
-
   const stopRecording = () => {
-    if (recording) {
-      recording.stop();
-      setIsRecording(false);
-    }
+    recorder.current
+      .stop()
+      .getMp3()
+      .then(([buffer, blob]) => {
+        const newBlobUrl = URL.createObjectURL(blob); //generates url from blob
+        setBlobUrl(newBlobUrl); //refreshes the page
+        setIsRecording(false);
+        sendAudioToServer(blob);
+      })
+      .catch((e) => console.log(e));
   };
 
-  const sendAudioToServer = async (audioBlob) => {
+  const sendAudioToServer = async (blob) => {
+    const audioFile = new File([blob], "audio_file",{type: "audio/mp3"});
     const formData = new FormData();
-    formData.append('audio', audioBlob);
+    formData.append('audio', audioFile);
     formData.append('user_name', userData.name);
     formData.append('native_language', userData.nativeLanguage);
     formData.append('target_language', userData.learningLanguage);
-
-    const response = await fetch('http://localhost:5000/process_audio', {
+    console.log(blob);
+    const response = await fetch('http://localhost:5000/start_conversation', {
       method: 'POST',
       body: formData,
     });
 
     const data = await response.json();
-    
-      // Aquí puedes acceder a los datos devueltos por el servidor Flask
-      // y actualizar el estado del componente para mostrarlos en la interfaz de usuario
+      console.log(data);
+      setResponseText(data.text_response);
+      const audio = new Audio(`data:audio/wav;base64,${data.audio_response}`);
+      const transcriptionWithUserName = `${userData.name}: ${data.transcript}`;
+      setTranscriptionText(transcriptionWithUserName);
+      audio.play();
     };
-  
     return (
       <div className="">
         <img src={teacher} alt="Personaje" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-2/3 w-1/2 md:w-1/3" />
@@ -60,12 +64,19 @@ export default function TeacherComponent({ userData }) {
           <h1 className="text-6xl font-bold mb-4 text-white text-center">Hello I'am your teacher</h1>
           <textarea className="w-full p-2 mb-4 h-40" readOnly value={responseText} />
           <div className="flex space-x-4">
-            <input type="text" className="w-full p-2" placeholder="Introduce tu texto aquí" />
-            {isRecording ? (
-              <button onClick={stopRecording} className="bg-red-500 text-white p-2 rounded">Stop</button>
-            ) : (
-              <button onClick={startRecording} className="bg-blue-500 text-white p-2 rounded">Record</button>
-            )}
+          <textarea type="text" className="w-full p-2" placeholder="Introduce tu texto aquí" value={transcriptionText}/>
+          <button onClick={startRecording} disabled={isRecording}>
+            Record
+          </button>
+          <button onClick={stopRecording} disabled={!isRecording}>
+            Stop
+          </button>
+          <audio
+            ref={audioPlayer}
+            src={blobURL}
+            controls="controls"
+            onEnded={() => setPlay(false)} //event handler when audio has stopped playing
+          />
           </div>
         </div>
       </div>
