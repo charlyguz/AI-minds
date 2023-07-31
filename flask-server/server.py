@@ -11,10 +11,10 @@ from io import BytesIO
 whisper_api_key = os.environ['WHISPER_API_KEY']
 gpt_api_key = os.environ['GPT_API_KEY']
 elevenlabs_api_key = os.environ['ELEVENLABS_API_KEY']
-
+openai.api_key = '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'
 app = Flask(__name__)
 CORS(app)
-
+"""
 @app.route('/process_audio', methods=['POST'])
 def process_audio():
     audio_file = request.files['audio']
@@ -90,7 +90,7 @@ def get_feedback(text, user_name, native_language, target_language):
     data = response.json()
     feedback = data['choices'][0]['text']
     
-    return feedback
+    return feedback """ 
 
 def text_to_speech(text, language):
     # Utiliza la API de ElevenLabs para convertir el texto en voz
@@ -110,15 +110,15 @@ def start_conversation():
     target_language = request.form['target_language']
     
     # Utiliza GPT para generar una respuesta en el idioma nativo y en el idioma objetivo
-    response_text = get_response("", user_name, native_language, target_language)
+    response_text = get_response("", native_language, target_language)
     
     # Utiliza ElevenLabs para convertir el texto de respuesta a voz en ambos idiomas
-    target_audio_response = text_to_speech(response_text['target'], target_language)
+    target_audio_response = text_to_speech(response_text, target_language)
     
     # Envía el audio como una respuesta de archivo
     return send_file(BytesIO(target_audio_response), mimetype='audio/mpeg')
 
-def get_response(text, user_name, native_language, target_language):
+def get_response(text, native_language, target_language):
     # Aquí iría el código para enviar una solicitud a la API de GPT-4
     # y generar una respuesta en el idioma nativo y en el idioma objetivo
     # Por ejemplo:
@@ -127,26 +127,13 @@ def get_response(text, user_name, native_language, target_language):
     else:
         prompt = text 
     
-    response = requests.post(
-        "https://api.openai.com/v1/engines/davinci/completions",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {gpt_api_key}"
-        },
-        json={
-            "prompt": prompt,
-            "max_tokens": 1024,
-            "n": 1,
-            "stop": None,
-            "temperature": 0.5,
-        }
+    response = openai.Completion.create(
+        model="text-davinci-003",
+        prompt=prompt
     )
+
     
-    data = response.json()
-    
-    response_text = {
-        'data': data['choices'][0]['text']
-    }
+    response_text = response["choices"][0]["text"]
     
     return response_text
 
