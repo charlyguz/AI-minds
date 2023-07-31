@@ -8,11 +8,11 @@ from elevenlabs import set_api_key
 from io import BytesIO
 import base64
 
-
+# set_api_key("") descomentar y aqui poner la api de 11l 
 whisper_api_key = os.environ['WHISPER_API_KEY']
 gpt_api_key = os.environ['GPT_API_KEY']
 elevenlabs_api_key = os.environ['ELEVENLABS_API_KEY']
-openai.api_key = ['OPENAI_API_KEY']
+openai.api_key = '' # aqui poner la api de open ai
 app = Flask(__name__)
 CORS(app)
 """
