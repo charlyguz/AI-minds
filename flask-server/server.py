@@ -1,8 +1,12 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import openai
 import requests
 import os
+from elevenlabs import Voice, VoiceDesign, Gender, Age, Accent,  generate
+from elevenlabs import set_api_key
+from io import BytesIO
+
 
 whisper_api_key = os.environ['WHISPER_API_KEY']
 gpt_api_key = os.environ['GPT_API_KEY']
@@ -66,7 +70,7 @@ def get_feedback(text, user_name, native_language, target_language):
     # Aquí iría el código para enviar una solicitud a la API de GPT-4
     # y obtener retroalimentación a partir del texto transcrito
     # Por ejemplo:
-    prompt = f"<PROMPT PARA GENERAR RETROALIMENTACIÓN A PARTIR DEL TEXTO TRANSCRITO>"
+    prompt = text
     
     response = requests.post(
         "https://api.openai.com/v1/engines/davinci/completions",
@@ -90,27 +94,13 @@ def get_feedback(text, user_name, native_language, target_language):
 
 def text_to_speech(text, language):
     # Utiliza la API de ElevenLabs para convertir el texto en voz
-    response = requests.post(
-        "https://api.elevenlabs.io/synthesize",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {elevenlabs_api_key}"
-        },
-        json={
-            "text": text,
-            "voice": {
-                "gender": "female",
-                "age": "young",
-                "language": language,
-                "style": "soft"
-            }
-        }
-    )
-    
-    data = response.json()
-    audio = data['data']
-    
+    audio = generate(
+    text="¡Hola! Mi nombre es Arnold, encantado de conocerte!",
+    voice="Arnold",
+    model='eleven_multilingual_v1'
+        )
     return audio
+
 
     
 @app.route('/start_conversation', methods=['POST'])
@@ -121,38 +111,30 @@ def start_conversation():
     
     # Utiliza GPT para generar una respuesta en el idioma nativo y en el idioma objetivo
     response_text = get_response("", user_name, native_language, target_language)
+    
     # Utiliza ElevenLabs para convertir el texto de respuesta a voz en ambos idiomas
-    native_audio_response = text_to_speech(response_text['native'], native_language)
     target_audio_response = text_to_speech(response_text['target'], target_language)
     
-    response = {
-        "native_response": response_text['native'],
-        "target_response": response_text['target'],
-        "native_audio_response": native_audio_response,
-        "target_audio_response": target_audio_response,
-    }
-    return jsonify(response)
-
+    # Envía el audio como una respuesta de archivo
+    return send_file(BytesIO(target_audio_response), mimetype='audio/mpeg')
 
 def get_response(text, user_name, native_language, target_language):
     # Aquí iría el código para enviar una solicitud a la API de GPT-4
     # y generar una respuesta en el idioma nativo y en el idioma objetivo
     # Por ejemplo:
     if text == "":
-        native_prompt = f"Apartir de ahora seras una maestra de idiomas llamada Laura que me ayudara a aprender {target_language} apartir de mi idioma natal que es {native_language}. Quiero que inicies la conversacion diciendome tu nombre y que seras mi maestra y podemos hablar de cualquier tema que deses todas las resuestas que me devuelvas quiero que primero me las des en mi  idioma natal y despues en el idioma que quiero aprender para asi saber como deberia continuar una conversacion en el idioma que quiero aprender. La respuesta que recibiras siempre sera en el idioma que deseo aprender y tu debes continuar la conversacion. Todo lo que me digas tiene que estar en 2 versiones 1 es en mi idioma natal y la segunda es el idioma que quiero aprender. Las respuestas que me des deben ser cortas para que no me pierda entre tanto texto."
-        target_prompt = native_prompt
+        prompt = f"Apartir de ahora seras una maestra de idiomas llamada Laura que me ayudara a aprender {target_language} apartir de mi idioma natal que es {native_language}. Quiero que inicies la conversacion diciendome tu nombre y que seras mi maestra y podemos hablar de cualquier tema que deses todas las resuestas que me devuelvas quiero que primero me las des en mi  idioma natal y despues en el idioma que quiero aprender para asi saber como deberia continuar una conversacion en el idioma que quiero aprender. La respuesta que recibiras siempre sera en el idioma que deseo aprender y tu debes continuar la conversacion. Todo lo que me digas tiene que estar en 2 versiones 1 es en mi idioma natal y la segunda es el idioma que quiero aprender. Las respuestas que me des deben ser cortas para que no me pierda entre tanto texto."
     else:
-        native_prompt = f"<PROMPT PARA GENERAR UNA RESPUESTA EN EL IDIOMA NATIVO>"
-        target_prompt = f"<PROMPT PARA GENERAR UNA RESPUESTA EN EL IDIOMA OBJETIVO>"
+        prompt = text 
     
-    native_response = requests.post(
+    response = requests.post(
         "https://api.openai.com/v1/engines/davinci/completions",
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {gpt_api_key}"
         },
         json={
-            "prompt": native_prompt,
+            "prompt": prompt,
             "max_tokens": 1024,
             "n": 1,
             "stop": None,
@@ -160,27 +142,10 @@ def get_response(text, user_name, native_language, target_language):
         }
     )
     
-    target_response = requests.post(
-        "https://api.openai.com/v1/engines/davinci/completions",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {gpt_api_key}"
-        },
-        json={
-            "prompt": target_prompt,
-            "max_tokens": 1024,
-            "n": 1,
-            "stop": None,
-            "temperature": 0.5,
-        }
-    )
-    
-    native_data = native_response.json()
-    target_data = target_response.json()
+    data = response.json()
     
     response_text = {
-        'native': native_data['choices'][0]['text'],
-        'target': target_data['choices'][0]['text']
+        'data': data['choices'][0]['text']
     }
     
     return response_text
