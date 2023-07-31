@@ -1,12 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import {AudioRecorder, useAudioRecorder} from "react-audio-voice-recorder";
 import teacher from '../assets/teacher.png';
 import '../index.css';
 
 export default function TeacherComponent({ userData }) {
-  const [recording, setRecording] = React.useState(null);
-  const [isRecording, setIsRecording] = React.useState(false);
   const [responseText, setResponseText] = React.useState('');
-  
+  const recorderControls = useAudioRecorder();
+  const [audioSourceURL, setAudioSourceURL] = React.useState("");
+  const [transcriptionText, setTranscriptionText] = useState("");
+  const onRecordingComplete = (blob) => {
+    const url = URL.createObjectURL(blob);
+    console.log(blob);
+    setAudioSourceURL(url);
+    sendAudioToServer(blob);
+  };
+  const sendAudioToServer = async (blob) => {
+    const audioFile = new File([blob], "audio_file",{type: "audio/wav"});
+    const formData = new FormData();
+    formData.append('audio', audioFile);
+    formData.append('user_name', userData.name);
+    formData.append('native_language', userData.nativeLanguage);
+    formData.append('target_language', userData.learningLanguage);
+
+    const response = await fetch('http://localhost:5000/start_conversation', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+      console.log(data);
+      const transcriptionWithUserName = `${userData.name}: ${data.transcript}`; // Concatenar el nombre del usuario con el texto de transcripción
+      setTranscriptionText(transcriptionWithUserName);
+    };
   React.useEffect(() => {
     const startConversation = async () => {
       const response = await fetch('http://localhost:5000/start_conversation', {
@@ -26,56 +51,8 @@ export default function TeacherComponent({ userData }) {
       const audio = new Audio(`data:audio/wav;base64,${data.audio_response}`);
       audio.play();
     };
-  
     startConversation();
   }, []);
-
-
-  const startRecording = () => {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.start();
-      setIsRecording(true);
-
-      const audioChunks = [];
-      mediaRecorder.addEventListener('dataavailable', event => {
-        audioChunks.push(event.data);
-      });
-
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(audioChunks);
-        sendAudioToServer(audioBlob);
-        setRecording(audioBlob);
-      });
-
-      setRecording(mediaRecorder);
-    });
-  };
-
-  const stopRecording = () => {
-    if (recording) {
-      recording.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const sendAudioToServer = async (audioBlob) => {
-    const formData = new FormData();
-    formData.append('audio', audioBlob);
-    formData.append('user_name', userData.name);
-    formData.append('native_language', userData.nativeLanguage);
-    formData.append('target_language', userData.learningLanguage);
-
-    const response = await fetch('http://localhost:5000/process_audio', {
-      method: 'POST',
-      body: formData,
-    });
-    
-    const data = await response.json();
-    
-      // Aquí puedes acceder a los datos devueltos por el servidor Flask
-      // y actualizar el estado del componente para mostrarlos en la interfaz de usuario
-    };
   
     return (
       <div className="">
@@ -84,13 +61,15 @@ export default function TeacherComponent({ userData }) {
           <h1 className="text-6xl font-bold mb-4 text-white text-center">Hello I'am your teacher</h1>
           <textarea className="w-full p-2 mb-4 h-40" readOnly value={responseText} />
           <div className="flex space-x-4">
-            <input type="text" className="w-full p-2" placeholder="Introduce tu texto aquí" />
-            {isRecording ? (
-              <button onClick={stopRecording} className="bg-red-500 text-white p-2 rounded">Stop</button>
-            ) : (
-              <button onClick={startRecording} className="bg-blue-500 text-white p-2 rounded">Record</button>
-            )}
-          </div>
+          <AudioRecorder
+            onRecordingComplete={(blob) => onRecordingComplete(blob)}
+            recorderControls={recorderControls}
+            />
+            <audio controls src={audioSourceURL} type="audio/mpeg" preload="metadata"/>
+            <textarea type="text" className="w-full p-2" placeholder="Introduce tu texto aquí" 
+            value={transcriptionText}
+            />
+      </div>
         </div>
       </div>
     );
