@@ -7,7 +7,7 @@ export default function TeacherComponent({ userData }) {
   const [responseText, setResponseText] = React.useState('');
   const recorder = useRef(null); //Recorder
   const audioPlayer = useRef(null); //Ref for HTML Audio tag
-
+  const [transcriptionText, setTranscriptionText] = useState("");
   const [blobURL, setBlobUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(null);
   const [play, setPlay] = useState(false);
@@ -15,6 +15,7 @@ export default function TeacherComponent({ userData }) {
   useEffect(() => {
     //Declares the recorder object and stores it in ref
     recorder.current = new MicRecorder({ bitRate: 128 });
+    setTranscriptionText('');
   }, []);
   const startRecording = () => {
     //start() returns a promise incase if audio is not blocked by browser
@@ -52,6 +53,8 @@ export default function TeacherComponent({ userData }) {
       console.log(data);
       setResponseText(data.text_response);
       const audio = new Audio(`data:audio/wav;base64,${data.audio_response}`);
+      const transcriptionWithUserName = `${userData.name}: ${data.transcript}`;
+      setTranscriptionText(transcriptionWithUserName);
       audio.play();
     };
     return (
@@ -61,7 +64,7 @@ export default function TeacherComponent({ userData }) {
           <h1 className="text-6xl font-bold mb-4 text-white text-center">Hello I'am your teacher</h1>
           <textarea className="w-full p-2 mb-4 h-40" readOnly value={responseText} />
           <div className="flex space-x-4">
-          <textarea type="text" className="w-full p-2" placeholder="Introduce tu texto aquí" />
+          <textarea type="text" className="w-full p-2" placeholder="Introduce tu texto aquí" value={transcriptionText}/>
           <button onClick={startRecording} disabled={isRecording}>
             Record
           </button>

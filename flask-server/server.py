@@ -42,8 +42,8 @@ def start_conversation():
     # Envía el audio como una respuesta de archivo
     response_data = {
         'text_response': response_text,
-        'audio_response': target_audio_base64
-        #'transcript': transcript
+        'audio_response': target_audio_base64,
+        'transcript': transcript
     }
     
     return jsonify(response_data)
@@ -79,7 +79,7 @@ def get_response(text, native_language, target_language):
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=prompt,
-        max_tokens=60,
+        max_tokens=100,
         temperature=0.5
     )
 
