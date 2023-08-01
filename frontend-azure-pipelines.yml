@@ -7,6 +7,16 @@ pool:
 stages:
 - stage: Build
   jobs:
+  - job: Backend
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+    - script: pip install -r requirements.txt
+      displayName: 'Install backend dependencies'
+    - script: gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
+      displayName: 'Run Flask server'
+
   - job: Frontend
     steps:
     - script: cd react-front
@@ -17,7 +27,13 @@ stages:
 
 - stage: Deploy
   jobs:
-  - job: Deploy
+  - job: DeployBackend
     steps:
+    - script: az webapp up --name Laura-backend --resource-group Laura --plan ASP-Laura-a1c0
+      displayName: 'Deploying backend to Azure'
+
+  - job: DeployFrontend
+    steps:
+    - script: cd react-front
     - script: az webapp up --name Laura-frontend --resource-group Laura --plan ASP-Laura-a1c0
       displayName: 'Deploying frontend to Azure'
