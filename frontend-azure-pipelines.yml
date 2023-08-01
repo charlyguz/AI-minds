@@ -1,0 +1,23 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Frontend
+    steps:
+    - script: cd react-front
+    - script: npm install
+      displayName: 'Install frontend dependencies'
+    - script: npm run build
+      displayName: 'Build React app'
+
+- stage: Deploy
+  jobs:
+  - job: Deploy
+    steps:
+    - script: az webapp up --name Laura-frontend --resource-group Laura --plan ASP-Laura-a1c0
+      displayName: 'Deploying frontend to Azure'
