@@ -1,0 +1,25 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Backend
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+    - script: pip install -r requirements.txt
+      displayName: 'Install backend dependencies'
+    - script: gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
+      displayName: 'Run Flask server'
+
+- stage: Deploy
+  jobs:
+  - job: Deploy
+    steps:
+    - script: az webapp up --name Laura-backend --resource-group Laura --plan ASP-Laura-a1c0
+      displayName: 'Deploying backend to Azure'
